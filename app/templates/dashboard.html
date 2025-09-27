@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AI Economic Mobility{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('main.refresh_data') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-sync-alt"></i> Refresh Data
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Quick Stats -->
+    <div class="col-md-3">
+        <div class="card text-center mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Skills Analyzed</h5>
+                <p class="h2">{{ user_skills|length }}</p>
+                <p class="text-muted">Current Skills</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Learning Progress</h5>
+                <p class="h2">{{ '{:.0f}%'.format(learning_progress) }}</p>
+                <p class="text-muted">Path Completion</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Job Matches</h5>
+                <p class="h2">{{ job_matches }}</p>
+                <p class="text-muted">Opportunities Found</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Market Readiness</h5>
+                <p class="h2">{{ '{:.0f}%'.format(market_readiness) }}</p>
+                <p class="text-muted">Skills Match</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Next Actions -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Recommended Next Actions</h5>
+            </div>
+            <div class="card-body">
+                {% if next_actions %}
+                    <div class="list-group">
+                        {% for action in next_actions %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ action.title }}</h6>
+                                    <small class="text-muted">{{ action.priority }}</small>
+                                </div>
+                                <p class="mb-1">{{ action.description }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No actions recommended at this time.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Opportunities -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Opportunities</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_opportunities %}
+                    <div class="list-group">
+                        {% for opp in recent_opportunities %}
+                            <a href="{{ opp.url }}" class="list-group-item list-group-item-action" target="_blank">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ opp.title }}</h6>
+                                    <small class="text-muted">{{ '{:.0f}%'.format(opp.match_score * 100) }} Match</small>
+                                </div>
+                                <p class="mb-1">{{ opp.company }}</p>
+                                <small class="text-muted">{{ opp.location }} | {{ opp.salary_range }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent opportunities found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Learning Progress -->
+{% if learning_paths %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Learning Progress</h5>
+            </div>
+            <div class="card-body">
+                {% for path in learning_paths %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6>{{ path.title }}</h6>
+                            <small class="text-muted">{{ '{:.0f}%'.format(path.progress) }}</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" data-progress="{{ path.progress }}"
+                                 aria-valuenow="{{ path.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small class="text-muted">{{ path.resources|length }} resources | Est. completion: {{ path.estimated_completion.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.progress-bar').forEach(function(bar) {
+        const progress = bar.getAttribute('data-progress');
+        if (progress) {
+            bar.style.width = progress + '%';
+        }
+    });
+});
+</script>
+{% endblock %}

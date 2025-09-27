@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Job Opportunities - AI Economic Mobility{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Job Opportunities</h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                Filter By
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="?sort=match">Best Match</a></li>
+                <li><a class="dropdown-item" href="?sort=salary">Highest Salary</a></li>
+                <li><a class="dropdown-item" href="?sort=date">Most Recent</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="?remote=true">Remote Only</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Applied Filters -->
+    {% if filters_applied %}
+        <div class="mb-3">
+            <h6 class="text-muted">Filters Applied:</h6>
+            <div class="d-flex flex-wrap gap-2">
+                {% for filter in filters_applied %}
+                    <span class="badge bg-light text-dark">
+                        {{ filter }}
+                        <a href="?remove_filter={{ loop.index0 }}" class="text-dark text-decoration-none ms-1">×</a>
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Job Listings -->
+            {% if opportunities %}
+                {% for job in opportunities %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title mb-1">{{ job.title }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
+                                </div>
+                                <span class="badge {% if job.match_score >= 0.8 %}bg-success{% elif job.match_score >= 0.6 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                    {{ '{:.0f}%'.format(job.match_score * 100) }} Match
+                                </span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> {{ job.location }}
+                                    {% if job.remote_ok %}
+                                        <span class="badge bg-info ms-2">Remote OK</span>
+                                    {% endif %}
+                                </small>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-dollar-sign"></i> {{ job.salary_range }}
+                                </small>
+                            </div>
+                            
+                            {% if job.skill_matches %}
+                                <div class="mb-3">
+                                    <strong>Matching Skills:</strong>
+                                    {% for skill in job.skill_matches %}
+                                        <span class="badge bg-success me-1">{{ skill }}</span>
+                                    {% endfor %}
+                                    
+                                    {% if job.missing_skills %}
+                                        <br>
+                                        <strong>Skills to Develop:</strong>
+                                        {% for skill in job.missing_skills %}
+                                            <span class="badge bg-warning me-1">{{ skill }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            <p class="card-text">{{ job.explanation }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Posted: {{ job.posted_date.strftime('%Y-%m-%d') }}</small>
+                                <div class="btn-group">
+                                    <a href="{{ job.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        View Job
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-success update-status"
+                                            data-job-id="{{ job.id }}"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#statusModal">
+                                        Update Status
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if pagination %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% for page in pagination.iter_pages() %}
+                                {% if page %}
+                                    <li class="page-item {{ 'active' if page == pagination.page else '' }}">
+                                        <a class="page-link" href="?page={{ page }}">{{ page }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <h4>No matching opportunities found</h4>
+                    <p class="text-muted">Try adjusting your filters or updating your skills profile.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <!-- Recommendations -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    {% if recommendations %}
+                        <div class="list-group">
+                            {% for rec in recommendations %}
+                                <div class="list-group-item">
+                                    <h6 class="mb-1">{{ rec.title }}</h6>
+                                    <p class="mb-1">{{ rec.description }}</p>
+                                    <small class="text-muted">Priority: {{ rec.priority }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recommendations available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Application Tracking -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Application Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for status, count in application_stats.items() %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ status.title() }}
+                                <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusModalLabel">Update Application Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="statusForm">
+                    <input type="hidden" id="jobId" name="jobId">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="suggested">Suggested</option>
+                            <option value="applied">Applied</option>
+                            <option value="interviewing">Interviewing</option>
+                            <option value="offered">Offered</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveStatus">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Handle status update button click
+    $('.update-status').click(function() {
+        $('#jobId').val($(this).data('job-id'));
+    });
+    
+    // Handle save status
+    $('#saveStatus').click(function() {
+        var data = {
+            job_id: $('#jobId').val(),
+            status: $('#status').val(),
+            notes: $('#notes').val()
+        };
+        
+        $.ajax({
+            url: "{{ url_for('main.update_opportunity_status') }}",
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

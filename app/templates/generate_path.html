@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Generate Learning Path</h2>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Latest Skills Analysis</h5>
+            <p class="card-text">Target Role: {{ analysis.target_role }}</p>
+            <p class="card-text">Analysis Date: {{ analysis.created_at.strftime('%Y-%m-%d') }}</p>
+            
+            <form method="POST" action="{{ url_for('main.generate_learning_path') }}">
+                <input type="hidden" name="analysis_id" value="{{ analysis.id }}">
+                <button type="submit" class="btn btn-primary">Generate Learning Path</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="mt-3">
+        <a href="{{ url_for('main.learning_paths') }}" class="btn btn-secondary">Back to Learning Paths</a>
+    </div>
+</div>
+{% endblock %}

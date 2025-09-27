@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Learning Paths - AI Economic Mobility{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Your Learning Paths</h2>
+        <a href="{{ url_for('main.generate_learning_path') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Generate New Path
+        </a>
+    </div>
+
+    {% if learning_paths %}
+        <div class="row">
+            {% for path in learning_paths %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ path.title }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>{{ path.description }}</p>
+                            
+                            <!-- Progress -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Progress</span>
+                                    <span>{{ '{:.0f}%'.format(path.progress) }}</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         data-progress="{{ path.progress }}"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Resources -->
+                            <div class="list-group mb-3">
+                                {% for resource in path.resources %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ resource.title }}</h6>
+                                            <small class="text-muted">
+                                                {{ resource.duration_hours }} hours
+                                            </small>
+                                        </div>
+                                        <p class="mb-1">
+                                            <small>{{ resource.provider }}</small>
+                                        </p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                Difficulty: {{ resource.difficulty_level }}
+                                                {% if resource.cost > 0 %}
+                                                    | Cost: ${{ '{:.2f}'.format(resource.cost) }}
+                                                {% else %}
+                                                    | Free
+                                                {% endif %}
+                                            </small>
+                                            <div class="btn-group">
+                                                <a href="{{ resource.url }}" target="_blank" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    Start
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-success mark-complete"
+                                                        data-path-id="{{ path.id }}"
+                                                        data-resource-id="{{ resource.id }}"
+                                                        {% if resource.completed %}disabled{% endif %}>
+                                                    {% if resource.completed %}
+                                                        <i class="fas fa-check"></i>
+                                                    {% else %}
+                                                        Mark Complete
+                                                    {% endif %}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Path Details -->
+                            <div class="d-flex justify-content-between text-muted">
+                                <small>Started: {{ path.created_at.strftime('%Y-%m-%d') }}</small>
+                                <small>Est. Completion: {{ path.estimated_completion.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="btn-group w-100">
+                                {% if path.status == 'active' %}
+                                    <button class="btn btn-outline-warning btn-sm path-status"
+                                            data-path-id="{{ path.id }}"
+                                            data-status="paused">
+                                        Pause
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-outline-success btn-sm path-status"
+                                            data-path-id="{{ path.id }}"
+                                            data-status="active">
+                                        Resume
+                                    </button>
+                                {% endif %}
+                                <button class="btn btn-outline-danger btn-sm path-status"
+                                        data-path-id="{{ path.id }}"
+                                        data-status="completed">
+                                    Mark Complete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <h4>No learning paths found</h4>
+            <p class="text-muted">Generate a new learning path based on your skill analysis.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Set progress bar widths
+    document.querySelectorAll('.progress-bar').forEach(function(bar) {
+        const progress = bar.getAttribute('data-progress');
+        if (progress) {
+            bar.style.width = progress + '%';
+        }
+    });
+    // Mark resource as complete
+    $('.mark-complete').click(function() {
+        var btn = $(this);
+        var pathId = btn.data('path-id');
+        var resourceId = btn.data('resource-id');
+        
+        $.ajax({
+            url: "{{ url_for('main.update_progress') }}",
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                path_id: pathId,
+                resource_id: resourceId,
+                completed: true
+            }),
+            success: function(response) {
+                if (response.success) {
+                    btn.html('<i class="fas fa-check"></i>').prop('disabled', true);
+                    // Update progress bar
+                    location.reload();
+                }
+            }
+        });
+    });
+    
+    // Update path status
+    $('.path-status').click(function() {
+        var btn = $(this);
+        var pathId = btn.data('path-id');
+        var status = btn.data('status');
+        
+        $.ajax({
+            url: "{{ url_for('main.update_path_status') }}",
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                path_id: pathId,
+                status: status
+            }),
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

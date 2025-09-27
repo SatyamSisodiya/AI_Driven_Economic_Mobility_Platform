@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Skills Analysis - AI Economic Mobility{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Skills Gap Analysis</h2>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Analysis Results -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Analysis Results for {{ user.target_role }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if analysis.skill_gaps %}
+                        <!-- Priority Skills -->
+                        <h6 class="mb-3">Priority Skills to Develop</h6>
+                        <div class="list-group mb-4">
+                            {% for gap in analysis.skill_gaps[:3] %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ gap.skill }}</h6>
+                                        <small class="text-muted">Priority Score: {{ '{:.2f}'.format(gap.priority_score) }}</small>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 5px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             data-progress="{{ (gap.current_level / gap.required_level * 100)|round }}"></div>
+                                    </div>
+                                    <small class="text-muted">
+                                        Current Level: {{ gap.current_level }} / Required Level: {{ gap.required_level }}
+                                    </small>
+                                    <p class="mb-1 mt-2">
+                                        <small>{{ gap.importance * 100 }}% of job postings require this skill</small><br>
+                                        <small>Average salary impact: ${{ '{:,.0f}'.format(gap.salary_impact) }}</small>
+                                    </p>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Market Insights -->
+                        <h6 class="mb-3">Market Insights</h6>
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 text-center">
+                                        <h3>{{ '{:.0f}%'.format(analysis.market_insights.match_rate * 100) }}</h3>
+                                        <p class="text-muted">Skills Match Rate</p>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <h3>${{ '{:,.0f}'.format(analysis.market_insights.avg_salary) }}</h3>
+                                        <p class="text-muted">Average Salary</p>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <h3>{{ analysis.market_insights.demand_level }}</h3>
+                                        <p class="text-muted">Market Demand</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <h6 class="mb-3">Action Steps</h6>
+                        <div class="list-group">
+                            {% for rec in analysis.recommendations %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ rec.title }}</h6>
+                                        <small class="text-muted">{{ rec.timeline }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ rec.description }}</p>
+                                    {% if rec.resources %}
+                                        <small>
+                                            Recommended Resources:
+                                            <ul class="mt-1">
+                                                {% for resource in rec.resources %}
+                                                    <li><a href="{{ resource.url }}" target="_blank">{{ resource.title }}</a></li>
+                                                {% endfor %}
+                                            </ul>
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No analysis available. Please ensure your profile is complete with skills and target role.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Generate Learning Path -->
+            {% if analysis.skill_gaps %}
+                <form action="{{ url_for('main.generate_learning_path') }}" method="POST">
+                    <input type="hidden" name="analysis_id" value="{{ analysis.id }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-graduation-cap"></i> Generate Learning Path
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <!-- Historical Analysis -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Analysis History</h5>
+                </div>
+                <div class="card-body">
+                    {% if analysis_history %}
+                        <div class="list-group">
+                            {% for hist in analysis_history %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ hist.target_role }}</h6>
+                                        <small>{{ hist.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </div>
+                                    <p class="mb-1">Match Rate: {{ '{:.0f}%'.format(hist.match_rate * 100) }}</p>
+                                    <small>Priority Skills: {{ hist.priority_skills|join(', ') }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No previous analyses found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
