@@ -47,6 +47,18 @@ class LearningResource(db.Model):
     rating = db.Column(db.Float)
     difficulty_level = db.Column(db.String(20))  # beginner, intermediate, advanced
 
+class LearningPathResource(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    learning_path_id = db.Column(db.Integer, db.ForeignKey('learning_path.id'), nullable=False)
+    learning_resource_id = db.Column(db.Integer, db.ForeignKey('learning_resource.id'), nullable=False)
+    order_position = db.Column(db.Integer, nullable=False)
+    completed = db.Column(db.Boolean, default=False)
+    completed_at = db.Column(db.DateTime)
+    
+    # Define relationships
+    learning_path = db.relationship('LearningPath', back_populates='path_resources')
+    learning_resource = db.relationship('LearningResource')
+
 class LearningPath(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -56,6 +68,21 @@ class LearningPath(db.Model):
     progress = db.Column(db.Float, default=0.0)
     status = db.Column(db.String(20), default='active')  # active, completed, paused
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Many-to-many relationship with resources through learning_path_resource
+    resources = db.relationship(
+        'LearningResource',
+        secondary='learning_path_resource',
+        backref=db.backref('paths', lazy='dynamic'),
+        lazy='dynamic'
+    )
+    
+    # One-to-many relationship with path_resources
+    path_resources = db.relationship(
+        'LearningPathResource',
+        back_populates='learning_path',
+        lazy='dynamic'
+    )
 
 class JobOpportunity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
