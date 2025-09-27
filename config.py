@@ -13,7 +13,8 @@ class Config:
     ADZUNA_APP_KEY = os.environ.get('ADZUNA_APP_KEY')
     COURSERA_API_KEY = os.environ.get('COURSERA_API_KEY')
     GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-    USAJOBS_API_KEY = os.environ.get('USAJOBS_API_KEY')
+    # Optional LinkedIn RSS feed URL
+    LINKEDIN_JOBS_RSS = os.environ.get('LINKEDIN_JOBS_RSS')
     
     # Redis for Celery
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
