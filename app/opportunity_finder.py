@@ -324,6 +324,40 @@ class OpportunityFinder:
         
         db.session.commit()
     
+    def get_user_opportunities(self, user_id, limit=20):
+        """Get opportunities for a user, including saved and matched ones"""
+        # Get saved opportunities
+        saved_opps = UserOpportunity.query.filter_by(user_id=user_id)\
+            .order_by(UserOpportunity.match_score.desc())\
+            .limit(limit)\
+            .all()
+        
+        opportunities = []
+        for uo in saved_opps:
+            job = JobOpportunity.query.get(uo.opportunity_id)
+            if job:
+                opportunities.append({
+                    'id': job.id,
+                    'title': job.title,
+                    'company': job.company,
+                    'location': job.location,
+                    'salary_range': f"${job.salary_min:,} - ${job.salary_max:,}" if job.salary_min and job.salary_max else "Not specified",
+                    'description': job.description,
+                    'url': job.url,
+                    'posted_date': job.posted_date,
+                    'remote_ok': job.remote_ok,
+                    'match_score': uo.match_score,
+                    'status': uo.status
+                })
+        
+        # If we don't have enough saved opportunities, find new ones
+        if len(opportunities) < limit:
+            new_matches = self.find_opportunities(user_id, limit - len(opportunities))
+            if 'opportunities' in new_matches:
+                opportunities.extend(new_matches['opportunities'])
+        
+        return opportunities
+
     def _get_applied_filters(self, user):
         """Get filters that were applied during search"""
         filters = []
